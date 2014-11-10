@@ -13,8 +13,8 @@ package clicktracking.no.uio.kulu;
    is entered.
 */
 
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 
 
 
@@ -29,9 +29,10 @@ public class ButtonPanel extends GestureGUIPanel
   private ButtonInfo buttonInfo = null;
 
 
-  public ButtonPanel(String label, TestGestureGUIs top)
+  public ButtonPanel(String label, GestureGUI gestureGUI)
   {
-    super(label, ComponentType.BUTTON, INACTIVE_FNM, ACTIVE_FNM, top);
+    super(label, ComponentType.BUTTON, INACTIVE_FNM, ACTIVE_FNM, gestureGUI);
+    setOpaque(false);
     pressedIm = loadImage(PRESSED_FNM);
     buttonInfo = new ButtonInfo(label);
   }  // end of ButtonPanel()

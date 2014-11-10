@@ -41,6 +41,8 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
+import no.uio.kulu.TrackerPanel;
+
 
  // possible states for a gesture GUI (GGUI) component
 enum GestureState {   
@@ -79,7 +81,7 @@ public class GestureGUIPanel extends JPanel
   private long lastMovedTime = -1;
           // time when the hand point last moved in the active state
 
-  protected TestGestureGUIs topLevel;   
+  protected GestureGUI topLevel;   
   private boolean isPressed = false;
           // has the pressed state been announced at the top-level?
   private ComponentInfo compInfo = null;  // info passed to the top-level
@@ -88,7 +90,7 @@ public class GestureGUIPanel extends JPanel
 
   public GestureGUIPanel(String label, ComponentType type, 
                          String inActiveFnm, String activeFnm,
-                         TestGestureGUIs top)
+                         GestureGUI top)
   { guiLabel = label;
     setName("\"" + guiLabel + "\" " + type);    // combination of label & type
     topLevel = top;

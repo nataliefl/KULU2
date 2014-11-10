@@ -25,10 +25,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 
 import org.OpenNI.AlternativeViewpointCapability;
@@ -43,6 +43,10 @@ import org.OpenNI.SceneMetaData;
 import org.OpenNI.StatusException;
 import org.OpenNI.UserGenerator;
 
+import clicktracking.no.uio.kulu.ComponentInfo;
+
+import com.primesense.NITE.SessionManager;
+
 
 
 
@@ -50,10 +54,9 @@ interface CameraListener {
 	public void userPictureUpdate(int i, BufferedImage userImage);
 }
 
-public class TrackerPanel extends JPanel implements Runnable
+public class TrackerPanel extends JPanel
 {
 	private static final int MAX_DEPTH_SIZE = 10000;  
-
 	private Color USER_COLORS[] = {
 			Color.RED, Color.BLUE, Color.CYAN, Color.GREEN,
 			Color.MAGENTA, Color.PINK, Color.YELLOW, Color.WHITE};
@@ -74,46 +77,43 @@ public class TrackerPanel extends JPanel implements Runnable
 	 */
 	private BufferedImage backIm, cameraImage;
 	private int[] cameraPixels; // holds the pixels that will fill the cameraImage image
-	private volatile boolean isRunning;
+
 	// used for the average ms processing information
-	private int imageCount = 0, hideBGPixel; // the "hide the background" pixel: this could be any colour so long as its alpha value is 0 
-	private long totalTime = 0;
-	private DecimalFormat df;
+	private int hideBGPixel; // the "hide the background" pixel: this could be any colour so long as its alpha value is 0 
 	private Font msgFont;
-	//Debugging
-	private boolean debug = false;
-	// OpenNI
-	private Context context;
+
+	// OpenNI & NITE	
 	private DepthMetaData depthMD;
-	private ImageGenerator imageGen; 
 	private SceneMetaData sceneMD;
-	private DepthGenerator depthGen; 
+	private DepthGenerator depthGen;
+	private ImageGenerator imageGen; 
+	private Context context;
+	private SessionManager sessionMan;
+
 	private Skeletons skels;   // the users' skeletons
 	private Player [] players;
 	int [][] userPixels; // Each user's image pixels
 
-	public TrackerPanel(String backFnm)
+
+	public TrackerPanel(Context context, String backFnm)
 	{
+		this.context = context;
 		playerController = new PlayerController();
 		addCameraListener(playerController);
 		setBackground(Color.WHITE);
 		configOpenNI();
 
-		df = new DecimalFormat("0.#");  // 1 dp
 		msgFont = new Font("SansSerif", Font.BOLD, 18);
 		histogram = new float[MAX_DEPTH_SIZE];
 		backIm = loadImage(backFnm); //Background image
 		imWidth = depthMD.getFullXRes();
 		imHeight = depthMD.getFullYRes();
 		imgbytes = new byte[imWidth * imHeight * 3];  // create empty image bytes array of correct size and type
-		System.out.println("Image dimensions (" + imWidth + ", " +
-				imHeight + ")");
-		hideBGPixel =  new Color(0, 0, 255, 0).getRGB();   // transparent blue
+		//hideBGPixel =  new Color(0, 0, 255, 0).getRGB();   // transparent blue 
+		hideBGPixel = 0;
 		cameraPixels = new int[imWidth * imHeight]; // create d.s for holding camera pixels and image
-		cameraImage =  new BufferedImage( imWidth, imHeight, BufferedImage.TYPE_INT_ARGB);  // the image must have an alpha channel for the transparent blue pixels       
-
-
-		new Thread(this).start();   // start updating the panel
+//		cameraImage =  new BufferedImage( imWidth, imHeight, BufferedImage.TYPE_INT_ARGB);  // the image must have an alpha channel for the transparent blue pixels       
+	
 	} 
 
 	public void addCameraListener(CameraListener cl){
@@ -125,8 +125,6 @@ public class TrackerPanel extends JPanel implements Runnable
 	 */
 	private void configOpenNI() {
 		try {
-			context = new Context();
-
 			// add the NITE Licence 
 			License license = new License("PrimeSense", 
 					"0KOIk2JeIBYClPWVnMoRKn5cdY4=");   // vendor, key
@@ -171,53 +169,31 @@ public class TrackerPanel extends JPanel implements Runnable
 		}
 	}  // end of configOpenNI()
 
-
-
 	public Dimension getPreferredSize()
 	{ return new Dimension(imWidth, imHeight); }
 
-
-	public void closeDown()
-	{  isRunning = false;  } 
-
+	public void announcePress(ComponentInfo ci)
+	// called from GGUI panels for reporting component 'press' info
+	{  System.out.println("GUI update: " + ci);   }  
 
 	public void run()
 	/* update and display the users-coloured depth image and skeletons
      whenever the context is updated.
 	 */
 	{
-		isRunning = true;
-		while (isRunning) {
-			try {
-				context.waitAnyUpdateAll();
-			}
-			catch(StatusException e)
-			{  System.out.println(e); 
-			System.exit(1);
-			}
-			long startTime = System.currentTimeMillis();
-			updateUserDepths();
-			//Update player image and send to playercontroller
-			screenUsers();
-			int len = userPixels.length-1;
-			for(int i = 1; i < len; i++){ //User IDs start at 1
-				BufferedImage userImage = convertToUserImage(userPixels[i]);
-				for(CameraListener cl : cameraListeners )
-					cl.userPictureUpdate(i, userImage); // i is the user ID
-			}
+		updateUserDepths();
+		//Update player image and send to playercontroller
+		screenUsers();
+		int len = userPixels.length-1;
+		for(int i = 1; i < len; i++){ //User IDs start at 1
+			BufferedImage userImage = convertToUserImage(userPixels[i]);
+			for(CameraListener cl : cameraListeners )
+				cl.userPictureUpdate(i, userImage); // i is the user ID
+		}
+		skels.update();	
 
-			skels.update();
-			imageCount++;
-			totalTime += (System.currentTimeMillis() - startTime);
-			repaint();
-		}
-		// close down
-		try {
-			context.stopGeneratingAll();
-		}
-		catch (StatusException e) {}
-		context.release();
-		System.exit(0);
+		repaint();
+
 	}  // end of run()
 
 
@@ -281,8 +257,6 @@ public class TrackerPanel extends JPanel implements Runnable
 				numPoints++;
 			}
 		}
-		// System.out.println("No. of numPoints: " + numPoints);
-		// System.out.println("Maximum depth: " + maxDepth);
 
 		// convert into a cummulative depth count (skipping histogram[0])
 
@@ -335,7 +309,7 @@ public class TrackerPanel extends JPanel implements Runnable
 	private BufferedImage convertToUserImage(int [] pixels){
 		// change the modified pixels into an image
 		BufferedImage userImage = new BufferedImage(imWidth, imHeight, BufferedImage.TYPE_INT_ARGB);
-		userImage.setRGB(0, 0, imWidth, imHeight, cameraPixels, 0, imWidth);
+		userImage.setRGB(0, 0, imWidth, imHeight, pixels, 0, imWidth);
 		return userImage;
 	}
 
@@ -385,7 +359,7 @@ public class TrackerPanel extends JPanel implements Runnable
 			short userID = usersBuf.get();
 			if (userID == 0) {// if not a user (i.e. is part of the background)
 				cameraPixels[pos] = hideBGPixel;   // make pixel transparent
-				userPixels[userID][pos] = hideBGPixel;
+//				userPixels[userID][pos] = hideBGPixel;
 			}
 			else{
 				userPixels[userID][pos] = cameraPixels[pos];
@@ -404,37 +378,16 @@ public class TrackerPanel extends JPanel implements Runnable
 
 		double scaleX = this.getSize().width,
 				scaleY = this.getSize().height;
-
-		g2d.setFont(msgFont);    // for user status and stats
-		AffineTransform prevTransform = g2d.getTransform();      
+		
+		AffineTransform prevTransform = g2d.getTransform();   
+		
 		if(backIm != null)
 			g2d.drawImage(backIm, new AffineTransform(scaleX / backIm.getWidth(), 0, 0, scaleY / backIm.getHeight(), 0, 0), this);
-		g2d.transform(new AffineTransform(scaleX / cameraImage.getWidth(), 0, 0, scaleY / cameraImage.getHeight(), 0, 0));
-
-		playerController.drawAll(g2d);
-		if(debug)
-			writeStats(g2d);	
+		//g2d.transform(new AffineTransform(scaleX / cameraImage.getWidth(), 0, 0, scaleY / cameraImage.getHeight(), 0, 0));
+		playerController.drawAll(g2d);	
+		
 		g2d.setTransform(prevTransform);
+		
 	} // end of paintComponent()
-
-
-
-
-	private void writeStats(Graphics2D g2d)
-	/* write statistics in bottom-left corner, or
-     "Loading" at start time */
-	{
-		g2d.setColor(Color.BLUE);
-		int panelHeight = getHeight();
-		if (imageCount > 0) {
-			double avgGrabTime = (double) totalTime / imageCount;
-			g2d.drawString("Pic " + imageCount + "  " +
-					df.format(avgGrabTime) + " ms", 
-					5, panelHeight-10);  // bottom left
-		}
-		else  // no image yet
-			g2d.drawString("Loading...", 5, panelHeight-10);
-	}  // end of writeStats()
-
 
 } // end of TrackerPanel class

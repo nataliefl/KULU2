@@ -23,8 +23,9 @@ package clicktracking.no.uio.kulu;
 */
 
 
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
 
 
 
@@ -67,12 +68,13 @@ public class SliderPanel extends GestureGUIPanel
 
 
 
-  public SliderPanel(String label, boolean isHoriz, TestGestureGUIs top)
+  public SliderPanel(String label, boolean isHoriz, GestureGUI gestureGUI)
   {
     super(label, ComponentType.SLIDER,
              (isHoriz) ? HORIZ_INACTIVE : VERT_INACTIVE,
              (isHoriz) ? HORIZ_ACTIVE : VERT_ACTIVE, 
-          top);
+          gestureGUI);
+    setOpaque(false);
     isHorizontal = isHoriz;
     initSliderTabs();
     sliderInfo = new SliderInfo(label);

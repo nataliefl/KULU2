@@ -1,5 +1,3 @@
-package clicktracking.no.uio.kulu;
-
 
 // TestGestureGUIs.java
 // Andrew Davison, December 2011, ad@fivedots.psu.ac.th
@@ -30,40 +28,15 @@ package clicktracking.no.uio.kulu;
     You can quit the qpplication by typing ESC, 'q' or ctrl-c.
 */
 
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Point;
-import java.awt.Toolkit;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
+import java.awt.*;
+import javax.swing.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
+import java.awt.image.*;
 
-import javax.swing.JFrame;
-import javax.swing.JLayeredPane;
-
-import org.OpenNI.Context;
-import org.OpenNI.DepthGenerator;
-import org.OpenNI.GeneralException;
-import org.OpenNI.GestureGenerator;
-import org.OpenNI.HandsGenerator;
-import org.OpenNI.IObservable;
-import org.OpenNI.IObserver;
-import org.OpenNI.ImageGenerator;
-import org.OpenNI.License;
-import org.OpenNI.MapOutputMode;
-import org.OpenNI.PixelFormat;
-import org.OpenNI.Point3D;
-import org.OpenNI.StatusException;
-
-import com.primesense.NITE.HandEventArgs;
-import com.primesense.NITE.HandPointContext;
-import com.primesense.NITE.NullEventArgs;
-import com.primesense.NITE.PointControl;
-import com.primesense.NITE.SessionManager;
+import org.OpenNI.*;
+import com.primesense.NITE.*;
 
 
 
@@ -84,10 +57,7 @@ public class TestGestureGUIs extends JFrame implements Runnable
   private Context context;
   private DepthGenerator depthGen;
   private ImageGenerator imageGen;
-  private HandsGenerator hands;
-  private GestureGenerator gesture;
   private SessionManager sessionMan;
-  private PointControl pointControl;
 
 
 
@@ -95,7 +65,7 @@ public class TestGestureGUIs extends JFrame implements Runnable
   {
     super("Test Gesture GUI Components");
     
-    //setFullSize();
+    setFullSize();
     /* calculate scale factor for image, so it will be as wide as 
        the screen; scaleFactor will also be applied to the hand points */
     scaleFactor = ((double)scrWidth)/XRES;
@@ -120,8 +90,6 @@ public class TestGestureGUIs extends JFrame implements Runnable
  		setVisible(true);
 
     gguisMan.locateComponents();
-    pointControl = initPointControl();
-    
 
     new Thread(this).start();   // start updating context
   } // end of TestGestureGUIs()
@@ -210,18 +178,18 @@ public class TestGestureGUIs extends JFrame implements Runnable
       context.setGlobalMirror(true);
 
       // set up hands and gesture generators
-      hands = HandsGenerator.create(context); 
+      HandsGenerator hands = HandsGenerator.create(context); 
       hands.SetSmoothing(0.1f);
 
-      gesture = GestureGenerator.create(context);
+      GestureGenerator gesture = GestureGenerator.create(context);
 
       context.startGeneratingAll(); 
       System.out.println("Started context generating..."); 
 
       // set up session manager and points listener
-      
       sessionMan = new SessionManager(context, "Click,Wave", "RaiseHand");
-	  setSessionEvents(sessionMan);
+	    setSessionEvents(sessionMan);
+
       sessionMan.addListener( initPointControl() );
     }
     catch (GeneralException e) {
@@ -272,7 +240,6 @@ public class TestGestureGUIs extends JFrame implements Runnable
         context.waitAnyUpdateAll();
         sessionMan.update(context);
         camPanel.update(imageGen);
-        
       }
       catch(StatusException e)
       {  System.out.println(e); 
@@ -316,7 +283,6 @@ public class TestGestureGUIs extends JFrame implements Runnable
   {
     PointControl pointControl = null;
     try {
-    	
 	    pointControl = new PointControl();
 
       // a hand is in a new position -- generates lots of events

@@ -19,9 +19,12 @@ package clicktracking.no.uio.kulu;
    is entered. It contains the current angle of the dial knob's line.
 */
 
-import java.awt.*;
-import java.awt.image.*;
-import java.awt.geom.*;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 
 
 
@@ -48,16 +51,16 @@ public class DialPanel extends GestureGUIPanel
 
 
 
-  public DialPanel(String label, TestGestureGUIs top)
+  public DialPanel(String label, GestureGUI gestureGUI)
   {
-    super(label, ComponentType.DIAL, DIAL_INACTIVE, DIAL_ACTIVE, top);
+    super(label, ComponentType.DIAL, DIAL_INACTIVE, DIAL_ACTIVE, gestureGUI);
 
     // load hand and knob images
     handImage = loadImage(HAND);
     knobImage = loadImage(DIAL_KNOB);
     knobWidth = knobImage.getWidth();
     knobHeight = knobImage.getHeight();
-
+    setOpaque(false);
     angle = 0;    // initial angle of knob line to +x-axis
     dialInfo = new DialInfo(label, angle);
   }  // end of DialPanel()
