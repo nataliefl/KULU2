@@ -52,7 +52,7 @@ public class Main extends JFrame implements Runnable, ComponentListener
 			e1.printStackTrace();
 		}
 
-		setSize(640,480);
+		setSize(1600,600);
 		container = new JLayeredPane();
 		
 		//Player panel

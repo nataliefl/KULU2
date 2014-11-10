@@ -1,4 +1,7 @@
 package no.uio.kulu;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -19,6 +22,8 @@ public class Player {
 	private Map<ImagePosition, SkeletonImage> imgList = new  LinkedHashMap<ImagePosition, SkeletonImage>();
 	private BufferedImage playerImage;
 	private static double SCALEDEFAULT = 1300; //At 1000 px distance (z) the scale value = 1 or no scaling
+	//	private String message;
+
 
 	public enum ImagePosition{
 		HEAD,
@@ -38,6 +43,9 @@ public class Player {
 		setSkeletonImage(leftHand, null, null, new Point3D(-40,-20,0),ImagePosition.LEFT_HAND, 0);
 		setSkeletonImage(rightHand, null, null, new Point3D(0, 0, 0), ImagePosition.RIGHT_HAND, 0);
 		setSkeletonImage(body, null, null, new Point3D(0,50,0), ImagePosition.BODY, 0);
+
+
+		//		toggleMessage("I like cheese");
 
 	}
 
@@ -74,12 +82,16 @@ public class Player {
 			this.playerImage = playerImage;
 	}
 
-	public void draw(Graphics2D g2d) {
+	public void draw(Graphics2D g2d, Dimension size) {
 		if (g2d == null)
-			return;
-
-		if(playerImage != null)
+			return;	
+		
+		AffineTransform origTF = g2d.getTransform();    // store original orientation
+		
+		if(playerImage != null){
+			g2d.scale(size.getWidth() / playerImage.getWidth(), size.getHeight() / playerImage.getHeight());
 			g2d.drawImage(playerImage, 0, 0, null);
+		}
 
 		for(ImagePosition position : imgList.keySet()){
 
@@ -91,9 +103,6 @@ public class Player {
 
 			if (pivot != null && base != null && image != null && offset != null){
 
-				AffineTransform origTF = g2d.getTransform();    // store original orientation
-				AffineTransform newTF = (AffineTransform)(origTF.clone());
-
 				int z = (int)(pivot.getZ() + offset.getZ());
 
 				double dx = image.getWidth() * SCALEDEFAULT / z; //Width of scaled image
@@ -101,8 +110,11 @@ public class Player {
 				double sx = dx / image.getWidth(); //Scaling factors
 				double sy = dy / image.getHeight();
 
+				AffineTransform newTF = (AffineTransform)(origTF.clone());
+				
 				if(z > 0){
-					//Affinetransform works in oposite order								
+					//Affinetransform works in oposite order
+					newTF.concatenate(AffineTransform.getScaleInstance(size.getWidth() / playerImage.getWidth(), size.getHeight() / playerImage.getHeight()));
 					newTF.concatenate(AffineTransform.getTranslateInstance(si.getPivot().getX() + si.getOffset().getX(), si.getPivot().getY() + si.getOffset().getY()));
 					newTF.concatenate(AffineTransform.getRotateInstance( Math.toRadians(si.getAngle())));
 					newTF.concatenate(AffineTransform.getScaleInstance(sx, sy));
@@ -110,10 +122,14 @@ public class Player {
 				}	
 
 				g2d.setTransform(newTF);
-				g2d.drawImage(image, 0, 0, null);
-				g2d.setTransform(origTF);    // reset original orientation
+				g2d.drawImage(image, 0, 0, null);	
+				
+				g2d.setTransform(origTF);    // reset original orientation		
 			}
 		}
+		
+		g2d.setTransform(origTF);    // reset original orientation
+		
 	} 
 
 	private BufferedImage loadImage(String imFnm)
@@ -128,5 +144,15 @@ public class Player {
 		return image;
 	}  // end of loadImage()
 
+	//Display on screen text to the Player
+	//	public void toggleMessage(String message){
+	//		if(message != null)
+	//			this.message = message;
+	//		else message = null;
+	//	}
+	//
+	//	public void toggleMessage(){
+	//		message = null;
+	//	}
 
 }

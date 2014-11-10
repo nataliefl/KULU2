@@ -279,68 +279,89 @@ public class TestGestureGUIs extends JFrame implements Runnable
 
 
 
-  private PointControl initPointControl()
-  {
-    PointControl pointControl = null;
-    try {
+//----------------------- NITE events ----------------------------------
+
+
+ private void setSessionEvents(SessionManager sessionMan)
+	// create session callback...
+ {
+   try {
+     // session end
+     sessionMan.getSessionEndEvent().addObserver( new IObserver<NullEventArgs>() {
+       public void update(IObservable<NullEventArgs> observable, NullEventArgs args)
+       { isRunning = false; }
+     });
+   }
+   catch (StatusException e) {
+     e.printStackTrace();
+   }
+ }  // end of setSessionEvents()
+
+
+
+
+ private PointControl initPointControl()
+ {
+   PointControl pointControl = null;
+   try {
 	    pointControl = new PointControl();
 
-      // a hand is in a new position -- generates lots of events
-      // activate the relevant component; deactivate others
+     // a hand is in a new position -- generates lots of events
+     // activate the relevant component; deactivate others
 	    pointControl.getPointUpdateEvent().addObserver( new IObserver<HandEventArgs>() {
-        public void update(IObservable<HandEventArgs> observable, HandEventArgs args)
-        { 
-          HandPointContext hc = args.getHand();
-          gguisMan.updateGGUIs( getScreenCoord(hc.getPosition()) );
-        }
-      });
+       public void update(IObservable<HandEventArgs> observable, HandEventArgs args)
+       { 
+         HandPointContext hc = args.getHand();
+         gguisMan.updateGGUIs( getScreenCoord(hc.getPosition()) );
+       }
+     });
 
 
-      // create entry for a hand
+     // create entry for a hand
 	    pointControl.getPointCreateEvent().addObserver( new IObserver<HandEventArgs>() {
-        public void update(IObservable<HandEventArgs> observable, HandEventArgs args)
-        { camPanel.setMessage("Tracking...");  }
-      });
+       public void update(IObservable<HandEventArgs> observable, HandEventArgs args)
+       { camPanel.setMessage("Tracking...");  }
+     });
 
 
-      // no active points -- time to refocus
+     // no active points -- time to refocus
 	    pointControl.getNoPointsEvent().addObserver( new IObserver<NullEventArgs>() {
-        public void update(IObservable<NullEventArgs> observable, NullEventArgs args)
-        { 
-          gguisMan.inactivateGGUIs();   // make all components inactive
-          camPanel.setMessage("Refocus please.");
-        }
-      });
+       public void update(IObservable<NullEventArgs> observable, NullEventArgs args)
+       { 
+         gguisMan.inactivateGGUIs();   // make all components inactive
+         camPanel.setMessage("Refocus please.");
+       }
+     });
 
+   }
+   catch (GeneralException e) {
+     e.printStackTrace();
+   }
+   return pointControl;
+ }  // end of initPointControl()
+
+
+
+ private Point getScreenCoord(Point3D posPt)
+ /*  Convert hand point in 3D space to Kinect camera coordinates, and
+     then scale to screen coordinates  */
+ {
+    Point scrPt = new Point(scrWidth/2, scrHeight/2);    // default screen pos
+    try {
+      // convert from real-world 3D to camera coordinates
+      Point3D projPt = depthGen.convertRealWorldToProjective(posPt);
+
+      // scale to screen coordinates
+      int xPos = (int) Math.round( projPt.getX() * scaleFactor);    
+      int yPos = (int) Math.round( projPt.getY() * scaleFactor);
+      scrPt.x = xPos;
+      scrPt.y = yPos;
     }
-    catch (GeneralException e) {
+    catch (StatusException e) {
       e.printStackTrace();
     }
-    return pointControl;
-  }  // end of initPointControl()
-
-
-
-  private Point getScreenCoord(Point3D posPt)
-  /*  Convert hand point in 3D space to Kinect camera coordinates, and
-      then scale to screen coordinates  */
-  {
-     Point scrPt = new Point(scrWidth/2, scrHeight/2);    // default screen pos
-     try {
-       // convert from real-world 3D to camera coordinates
-       Point3D projPt = depthGen.convertRealWorldToProjective(posPt);
-
-       // scale to screen coordinates
-       int xPos = (int) Math.round( projPt.getX() * scaleFactor);    
-       int yPos = (int) Math.round( projPt.getY() * scaleFactor);
-       scrPt.x = xPos;
-       scrPt.y = yPos;
-     }
-     catch (StatusException e) {
-       e.printStackTrace();
-     }
-     return scrPt;
-  }  // end of getScreenCoord()
+    return scrPt;
+ }  // end of getScreenCoord()
 
 
 

@@ -376,18 +376,19 @@ public class TrackerPanel extends JPanel
 		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D) g;
 
-		double scaleX = this.getSize().width,
-				scaleY = this.getSize().height;
+		Dimension size = getSize();
+		double scaleX = size.width ,
+				scaleY = size.height;
 		
-		AffineTransform prevTransform = g2d.getTransform();   
+		AffineTransform prevTransform = g2d.getTransform();
 		
-		if(backIm != null)
-			g2d.drawImage(backIm, new AffineTransform(scaleX / backIm.getWidth(), 0, 0, scaleY / backIm.getHeight(), 0, 0), this);
-		//g2d.transform(new AffineTransform(scaleX / cameraImage.getWidth(), 0, 0, scaleY / cameraImage.getHeight(), 0, 0));
-		playerController.drawAll(g2d);	
-		
+		if(backIm != null){
+			g2d.drawImage(backIm, new AffineTransform(scaleX / backIm.getWidth(), 0, 0, scaleY / backIm.getHeight(), 0, 0), this);	
+		}
 		g2d.setTransform(prevTransform);
-		
+		playerController.drawAll(g2d, size);
+//		playerController.drawAll(g2d, scaleX / backIm.getWidth(), scaleY / backIm.getHeight());	
+			
 	} // end of paintComponent()
 
 } // end of TrackerPanel class
